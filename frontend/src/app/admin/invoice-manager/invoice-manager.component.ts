@@ -147,11 +147,11 @@ export class InvoiceManagerComponent implements OnInit {
       }
     }
 
-    Promise.all(promises).then(() => {
-      const opt = {
+   Promise.all(promises).then(() => {
+      const opt: any = {
         margin: 0.2,
         filename,
-        image: { type: 'jpeg', quality: 0.98 },
+        image: { type: 'jpeg', quality: 0.98 }, // ✅ 'jpeg' là đúng định dạng
         html2canvas: { scale: 1.2, useCORS: true },
         jsPDF: { unit: 'in', format: 'a3', orientation: 'landscape' },
       };
