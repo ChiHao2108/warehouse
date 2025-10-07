@@ -318,10 +318,10 @@ xuatHoaDonNhap(hd: any) {
   }
 
   Promise.all(promises).then(() => {
-    const opt = {
+    const opt: any = {   // 👈 thêm ": any" ở đây
       margin: 0.2,
       filename: `${hd.receipt_code}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
+      image: { type: 'jpeg', quality: 0.98 }, // ✅ phải là 'jpeg' (không phải 'image/jpeg')
       html2canvas: { scale: 1.2, useCORS: true },
       jsPDF: {
         unit: 'in',
@@ -334,8 +334,8 @@ xuatHoaDonNhap(hd: any) {
       // ✅ Sau khi xuất xong thì gọi API cập nhật trạng thái
       this.http.put(`http://localhost:3000/api/phieu-nhap/${hd.id}/xuat-hoa-don`, {})
         .subscribe(() => {
-        hd.daXuatHoaDon = true;
-      });
+          hd.daXuatHoaDon = true;
+        });
     });
   });
 }
@@ -358,7 +358,7 @@ xuatHoaDonXuat(hd: any) {
   }
 
   Promise.all(promises).then(() => {
-    const opt = {
+    const opt: any = {   // 👈 thêm ": any" ở đây
       margin: 0.2,
       filename: `${hd.receipt_code}_xuat.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
