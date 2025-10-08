@@ -4,7 +4,7 @@
 
     # ✅ Tự động redirect request API sang backend thật trên Railway
     @api path /api/*
-    reverse_proxy @api https://warehouse-backend-production.up.railway.app
+    reverse_proxy @api https://peaceful-youthfulness-production-b2ea.up.railway.app
 
     try_files {path} /index.html
 }
