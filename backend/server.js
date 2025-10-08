@@ -3651,13 +3651,6 @@ app.put('/api/phieu-xuat-kho/:id/huy', (req, res) => {
 });
 
 
-
-// ========================== SERVER ==========================
-
-app.listen(3000, () => {
-  console.log('✅ Server chạy tại http://localhost:3000');
-});
-
 app.put('/api/products-detail/distribute', (req, res) => {
     const { original_product_id, locations } = req.body;
 
@@ -3750,6 +3743,12 @@ app.get('/api/tong_gia_tri_ton_kho', (req, res) => {
   });
 });
 
+// ========================== SERVER ==========================
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`✅ Server đang chạy tại cổng ${PORT}`);
+});
 
 
 
