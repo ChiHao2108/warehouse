@@ -1,17 +1,10 @@
 :80 {
-    root * /app/dist/client/browser
+    root * /app/dist/client
     file_server
 
-    # Proxy các API
     @api path /api/*
-    reverse_proxy @api {
-        to https://peaceful-youthfulness-production-b2ea.up.railway.app
-        transport http {
-            tls
-        }
-    }
+    reverse_proxy @api https://peaceful-youthfulness-production-b2ea.up.railway.app
 
-    # Angular SPA fallback
     try_files {path} /index.html
 
     log {
