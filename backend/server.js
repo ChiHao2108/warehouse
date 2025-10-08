@@ -29,6 +29,14 @@ const db = mysql.createConnection({
   port: process.env.MYSQLPORT || 3306
 });
 
+db.connect((err) => {
+  if (err) {
+    console.error('❌ Lỗi kết nối MySQL:', err);
+  } else {
+    console.log('✅ Kết nối MySQL thành công');
+  }
+});
+
 // Secret key JWT
 const JWT_SECRET = 'your_jwt_secret';
 
