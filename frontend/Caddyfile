@@ -1,5 +1,5 @@
 :80 {
-    root * /app/dist/client
+    root * /app/dist/client/browser
     file_server
 
     @api path /api/*
