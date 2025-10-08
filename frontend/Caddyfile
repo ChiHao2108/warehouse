@@ -2,9 +2,20 @@
     root * /app/dist/client/browser
     file_server
 
-    # ✅ Tự động redirect request API sang backend thật trên Railway
+    # Proxy các API
     @api path /api/*
-    reverse_proxy @api https://peaceful-youthfulness-production-b2ea.up.railway.app
+    reverse_proxy @api {
+        to https://peaceful-youthfulness-production-b2ea.up.railway.app
+        transport http {
+            tls
+        }
+    }
 
+    # Angular SPA fallback
     try_files {path} /index.html
+
+    log {
+        output stdout
+        level DEBUG
+    }
 }
