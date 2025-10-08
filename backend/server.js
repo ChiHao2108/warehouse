@@ -20,12 +20,13 @@ app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 // Cho phép truy cập ảnh tĩnh
 app.use('/uploads', express.static('uploads'));
 
-// Kết nối CSDL
+// ✅ Kết nối MySQL (tự động cho cả local và Railway)
 const db = mysql.createConnection({
-  host: 'localhost',
-  user: 'root',
-  password: '48194007', // đổi nếu cần
-  database: 'warehouse_db'
+  host: process.env.MYSQLHOST || 'localhost',
+  user: process.env.MYSQLUSER || 'root',
+  password: process.env.MYSQLPASSWORD || '48194007', // vẫn giữ cho local
+  database: process.env.MYSQLDATABASE || 'warehouse_db', // giữ tên DB bạn đang xài
+  port: process.env.MYSQLPORT || 3306
 });
 
 // Secret key JWT
@@ -3746,6 +3747,7 @@ app.get('/api/tong_gia_tri_ton_kho', (req, res) => {
 // ========================== SERVER ==========================
 
 const PORT = process.env.PORT || 3000;
+
 app.listen(PORT, () => {
   console.log(`✅ Server đang chạy tại cổng ${PORT}`);
 });

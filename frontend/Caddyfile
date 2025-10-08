@@ -1,0 +1,10 @@
+:80 {
+    root * /app/dist/client/browser
+    file_server
+
+    # ✅ Tự động redirect request API sang backend thật trên Railway
+    @api path /api/*
+    reverse_proxy @api https://warehouse-backend-production.up.railway.app
+
+    try_files {path} /index.html
+}
