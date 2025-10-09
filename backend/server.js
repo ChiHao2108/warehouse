@@ -1010,8 +1010,8 @@ app.get('/api/products-detail/filter', (req, res) => {
 
   // 👉 GROUP BY để gộp sản phẩm theo mã
   sql += `
-    GROUP BY pd.product_code
-    ORDER BY MAX(pd.import_date) DESC, MAX(pd.id) DESC
+      GROUP BY pd.product_code
+      ORDER BY import_date DESC, id DESC
   `;
 
   db.query(sql, params, (err, results) => {
