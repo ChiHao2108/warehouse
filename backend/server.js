@@ -10,7 +10,11 @@ const ExcelJS = require('exceljs');
 const fs = require('fs');
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: 'https://warehouse2-production-f5db.up.railway.app', 
+  credentials: true
+}));
+
 
 // Tăng giới hạn body request lên 100MB
 app.use(express.json({ limit: '100mb' }));
@@ -71,11 +75,13 @@ const mysqlPromise = require('mysql2/promise');
 
 async function createAdmins() {
   const connection = await mysqlPromise.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: '48194007',
-    database: 'warehouse_db'
+    host: process.env.MYSQLHOST,
+    user: process.env.MYSQLUSER,
+    password: process.env.MYSQLPASSWORD,
+    database: process.env.MYSQLDATABASE,
+    port: process.env.MYSQLPORT || 3306
   });
+
 
   const admins = [
     { name: 'Chí Hào', email: 'chihao@gmail.com', password: 'admin123' },
