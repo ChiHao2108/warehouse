@@ -11,9 +11,12 @@ const fs = require('fs');
 
 const app = express();
 app.use(cors({
-  origin: 'https://warehouse2-production-f5db.up.railway.app', 
+  origin: 'https://warehouse2-production-f5db.up.railway.app',
+  methods: ['GET','POST','PUT','DELETE','OPTIONS'],
+  allowedHeaders: ['Content-Type','Authorization'],
   credentials: true
 }));
+
 
 
 // Tăng giới hạn body request lên 100MB
@@ -71,36 +74,7 @@ const GEMINI_API_KEY = 'AIzaSyBABTQRJprUeL2ovkHmkPKCyCO1uJaHPGU'; // Thay thế 
 // ĐÃ SỬA: Thay đổi mô hình từ 'gemini-pro' sang 'gemini-1.5-flash-latest'
 const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
 
-const mysqlPromise = require('mysql2/promise');
 
-async function createAdmins() {
-  const connection = await mysqlPromise.createConnection({
-    host: process.env.MYSQLHOST,
-    user: process.env.MYSQLUSER,
-    password: process.env.MYSQLPASSWORD,
-    database: process.env.MYSQLDATABASE,
-    port: process.env.MYSQLPORT || 3306
-  });
-
-
-  const admins = [
-    { name: 'Chí Hào', email: 'chihao@gmail.com', password: 'admin123' },
-    { name: 'Xuân Trường', email: 'xuantruong@gmail.com', password: 'admin123' }
-  ];
-
-  for (const admin of admins) {
-    const hashedPassword = await bcrypt.hash(admin.password, 10);
-    await connection.execute(
-      'INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)',
-      [admin.name, admin.email, hashedPassword, 'admin']
-    );
-    console.log(`Admin ${admin.name} đã được tạo với password hashed`);
-  }
-
-  await connection.end();
-}
-
-createAdmins();
 
 
 // ========================== AUTH ==========================
