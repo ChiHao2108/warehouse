@@ -67,11 +67,10 @@ const GEMINI_API_KEY = 'AIzaSyBABTQRJprUeL2ovkHmkPKCyCO1uJaHPGU'; // Thay thế 
 // ĐÃ SỬA: Thay đổi mô hình từ 'gemini-pro' sang 'gemini-1.5-flash-latest'
 const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
 
-const mysql = require('mysql2/promise');
-const bcrypt = require('bcryptjs');
+const mysqlPromise = require('mysql2/promise');
 
 async function createAdmins() {
-  const connection = await mysql.createConnection({
+  const connection = await mysqlPromise.createConnection({
     host: 'localhost',
     user: 'root',
     password: '48194007',
