@@ -10,7 +10,14 @@ const ExcelJS = require('exceljs');
 const fs = require('fs');
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: 'https://warehouse2-production-f5db.up.railway.app',
+  methods: ['GET','POST','PUT','DELETE'],
+  allowedHeaders: ['Content-Type','Authorization'],
+  credentials: true
+}));
+
+
 
 // Tăng giới hạn body request lên 100MB
 app.use(express.json({ limit: '100mb' }));
@@ -21,11 +28,27 @@ app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 app.use('/uploads', express.static('uploads'));
 
 // ✅ Kết nối MySQL dùng POOL (ổn định cho Railway, chống tự đóng kết nối)
-const db = mysql.createConnection({ 
-  host: 'localhost', 
-  user: 'root', 
-  password: '48194007', 
-  database: 'warehouse_db' 
+const pool = mysql.createPool({
+  host: process.env.MYSQLHOST || 'localhost',
+  user: process.env.MYSQLUSER || 'root',
+  password: process.env.MYSQLPASSWORD || '48194007',
+  database: process.env.MYSQLDATABASE || 'warehouse_db',
+  port: process.env.MYSQLPORT || 3306,
+  waitForConnections: true,
+  connectionLimit: 10, // Railway mỗi lần cấp khoảng 10 kết nối
+  queueLimit: 0
+});
+
+// Dùng pool.promise() để xài async/await mượt mà
+const db = pool.promise();
+
+pool.getConnection((err, connection) => {
+  if (err) {
+    console.error('❌ Lỗi kết nối MySQL (POOL):', err);
+  } else {
+    console.log('✅ Kết nối MySQL (POOL) thành công');
+    connection.release(); // giải phóng kết nối về pool
+  }
 });
 
 
