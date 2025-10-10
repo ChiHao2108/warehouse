@@ -11,11 +11,9 @@ const fs = require('fs');
 
 const app = express();
 app.use(cors({
-  origin: 'https://warehouse2-production-f5db.up.railway.app',
-  methods: ['GET','POST','PUT','DELETE','OPTIONS'],
-  allowedHeaders: ['Content-Type','Authorization'],
-  credentials: true
+  origin: '*'
 }));
+
 
 
 
