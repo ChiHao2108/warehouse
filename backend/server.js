@@ -21,10 +21,12 @@ app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 app.use('/uploads', express.static('uploads'));
 
 // Kết nối CSDL 
-const db = mysql.createConnection({ 
-  host: 'localhost', user: 'root', 
-  password: '48194007', // đổi nếu cần 
-  database: 'warehouse_db' 
+const db = mysql.createConnection({
+  host: process.env.MYSQLHOST || 'localhost',
+  user: process.env.MYSQLUSER || 'root',
+  password: process.env.MYSQLPASSWORD || '48194007',
+  database: process.env.MYSQLDATABASE || 'warehouse_db',
+  port: process.env.MYSQLPORT || 3306
 });
 
 
