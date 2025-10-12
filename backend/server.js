@@ -255,7 +255,7 @@ app.get('/api/user-info/:id', (req, res) => {
 // ✅ Thêm / cập nhật thông tin user (có thể có ảnh)
 app.post('/api/user-info', upload.single('avatar'), (req, res) => {
   const { user_id, full_name, date_of_birth, gender, address, phone } = req.body;
-  const image_url = req.file ? `http://localhost:3000/uploads/${req.file.filename}` : null;
+  const image_url = req.file ? `https://peaceful-youthfulness-production-b2ea.up.railway.app/uploads/${req.file.filename}` : null;
 
   const sql = `
     INSERT INTO user_info (user_id, full_name, date_of_birth, gender, address, phone, image_url)
@@ -304,7 +304,7 @@ app.post('/api/phieu-nhap', upload.any(), (req, res) => {
   // ✅ Ưu tiên logo mới (file), nếu không có thì dùng logo_url cũ
   const logoFile = files.find(f => f.fieldname === 'logo');
   const logo_url = logoFile
-    ? `http://localhost:3000/uploads/${logoFile.filename}`
+    ? `https://peaceful-youthfulness-production-b2ea.up.railway.app/uploads/${logoFile.filename}`
     : fields.logo_url || null;
 
   let products = [];
@@ -371,7 +371,7 @@ app.post('/api/phieu-nhap', upload.any(), (req, res) => {
         products.forEach((item, i) => {
           const img = files.find(f => f.fieldname === `product_image_${i}`);
           const image_url = img
-            ? `http://localhost:3000/uploads/${img.filename}`
+            ? `https://peaceful-youthfulness-production-b2ea.up.railway.app/uploads/${img.filename}`
             : item.image_url || null;
 
           db.query(
@@ -906,7 +906,7 @@ app.post('/api/upload', upload.single('image'), (req, res) => {
   }
 
   // Trả về URL đầy đủ với domain backend (localhost:3000)
-  const imageUrl = `http://localhost:3000/uploads/${req.file.filename}`;
+  const imageUrl = `https://peaceful-youthfulness-production-b2ea.up.railway.app/uploads/${req.file.filename}`;
   res.json({ imageUrl });
 });
 
@@ -1064,10 +1064,10 @@ app.post('/api/products-detail', upload.fields([
 
   // Chuẩn hóa đường dẫn ảnh
   const normalizePath = file =>
-    file?.path ? `http://localhost:3000/uploads/${path.basename(file.path)}` : null;
+    file?.path ? `https://peaceful-youthfulness-production-b2ea.up.railway.app/uploads/${path.basename(file.path)}` : null;
 
-  const image_url = normalizePath(req.files?.image?.[0]) || sp.image_url || 'http://localhost:3000/uploads/default.png';
-  const logo_url = normalizePath(req.files?.logo?.[0]) || sp.logo_url || 'http://localhost:3000/uploads/logogpt.png';
+  const image_url = normalizePath(req.files?.image?.[0]) || sp.image_url || 'https://peaceful-youthfulness-production-b2ea.up.railway.app/uploads/default.png';
+  const logo_url = normalizePath(req.files?.logo?.[0]) || sp.logo_url || 'https://peaceful-youthfulness-production-b2ea.up.railway.app/uploads/logogpt.png';
 
   // ======= Kiểm tra dữ liệu hợp lệ =======
   const requiredFields = ['product_code', 'product_name', 'product_type', 'unit', 'quantity', 'unit_price', 'weight', 'area', 'manufacture_date', 'expiry_date'];
