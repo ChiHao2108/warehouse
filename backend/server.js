@@ -69,7 +69,13 @@ const GEMINI_API_KEY = 'AIzaSyBABTQRJprUeL2ovkHmkPKCyCO1uJaHPGU'; // Thay thế 
 // ĐÃ SỬA: Thay đổi mô hình từ 'gemini-pro' sang 'gemini-1.5-flash-latest'
 const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
 
-
+app.get('/uploads', (req, res) => {
+  const uploadDir = path.join(__dirname, 'uploads');
+  fs.readdir(uploadDir, (err, files) => {
+    if (err) return res.status(500).json({ error: 'Không đọc được thư mục uploads' });
+    res.json({ files });
+  });
+});
 
 
 // ========================== AUTH ==========================
