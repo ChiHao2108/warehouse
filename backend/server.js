@@ -52,6 +52,15 @@ const upload = multer({
   }
 });
 
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+  console.log("⚠ Cảnh báo: Thư mục uploads không tồn tại trên server Railway!");
+} else {
+  console.log("📂 Thư mục uploads tồn tại. Danh sách file:");
+  console.log(fs.readdirSync(uploadDir));
+}
+
+
 const axios = require('axios'); // Thêm axios
 const bodyParser = require('body-parser'); // Thêm body-parser
 
