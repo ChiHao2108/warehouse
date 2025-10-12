@@ -2044,7 +2044,7 @@ app.get('/api/products-detail/with-deducted', async (req, res) => {
 
     res.json(result);
   } catch (err) {
-    console.error('❌ Lỗi lấy dữ liệu hàng tồn:', err);
+    console.error('❌ Lỗi lấy dữ liệu hàng tồn (chi tiết):', err.sqlMessage || err);
     res.status(500).json({ message: 'Lỗi khi lấy dữ liệu hàng tồn' });
   }
 });
