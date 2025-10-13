@@ -649,7 +649,7 @@ app.put('/api/products-detail/:id', upload.fields([
     expiry_date = null
   } = req.body;
 
-  const BASE_URL = 'http://localhost:3000';
+  const BASE_URL = 'https://peaceful-youthfulness-production-b2ea.up.railway.app';
 
   // Lấy URL mới nếu upload, nếu không thì giữ URL cũ
   let imageUrl = req.body.image_url || '';
@@ -1205,7 +1205,7 @@ app.put('/api/products/:id', upload.fields([
     return res.status(400).json({ message: 'ID không hợp lệ' });
   }
 
-  const BASE_URL = 'http://localhost:3000';
+  const BASE_URL = 'https://peaceful-youthfulness-production-b2ea.up.railway.app';
   let { product_name, product_code, product_type, unit, image_url, logo_url } = req.body;
 
   // ✅ Nếu upload mới thì lấy file mới
