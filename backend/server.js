@@ -637,6 +637,7 @@ app.put('/api/products-detail/:id', upload.fields([
   { name: 'image_url', maxCount: 1 },
   { name: 'logo_url', maxCount: 1 }
 ]), (req, res) => {
+  
   const { id } = req.params;
   const {
     product_code = '',
