@@ -3255,95 +3255,116 @@ app.get('/api/xuat-excel/kiem-ke/:dotId', async (req, res) => {
             WHERE kkct.dot_id = ?
         `;
 
-        db.query(sql, [dotId], async (err2, rows) => {
-            if (err2) {
-                console.error('❌ Lỗi truy vấn dữ liệu chi tiết sản phẩm:', err2);
-                return res.status(500).json({ success: false, message: 'Lỗi truy vấn chi tiết sản phẩm kiểm kê.' });
-            }
+      db.query(sql, [dotId], async (err2, rows) => {
+          if (err2) {
+              console.error('❌ Lỗi truy vấn dữ liệu chi tiết sản phẩm:', err2);
+              return res.status(500).json({ success: false, message: 'Lỗi truy vấn chi tiết sản phẩm kiểm kê.' });
+          }
 
-            try {
-                // Khởi tạo Workbook và Worksheet của ExcelJS
-                const workbook = new ExcelJS.Workbook();
-                const sheet = workbook.addWorksheet('Báo cáo kiểm kê');
+          try {
+              // ==== Gộp sản phẩm trùng theo product_code ====
+              const groupedMap = new Map();
+              rows.forEach(sp => {
+                  const key = sp.product_code;
+                  if (!groupedMap.has(key)) {
+                      groupedMap.set(key, { ...sp });
+                  } else {
+                      const existing = groupedMap.get(key);
 
-                // --- Cấu hình chung cho Workbook ---
-                workbook.creator = 'Hệ thống quản lý kho';
-                workbook.lastModifiedBy = 'Hệ thống quản lý kho';
-                workbook.created = new Date();
-                workbook.modified = new Date();
+                      // Gộp số lượng hệ thống
+                      existing.system_quantity += sp.system_quantity || 0;
 
-                let currentRow = 1; // Biến theo dõi dòng hiện tại trong Excel
+                      // Gộp số lượng thực tế
+                      if (sp.actual_quantity != null) {
+                          existing.actual_quantity = (existing.actual_quantity || 0) + sp.actual_quantity;
+                      }
 
-                // --- 1. Tiêu đề chính của báo cáo ---
-                sheet.mergeCells(`A${currentRow}:J${currentRow}`);
-                const titleCell = sheet.getCell(`A${currentRow}`);
-                titleCell.value = 'BÁO CÁO KIỂM KÊ KHO';
-                titleCell.font = { name: 'Times New Roman', size: 28, bold: true, color: { argb: 'FF000080' } };
-                titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
-                titleCell.fill = {
-                    type: 'pattern',
-                    pattern: 'solid',
-                    fgColor: { argb: 'FFDDEBF7' }
-                };
-                titleCell.border = {
-                    top: { style: 'medium' }, left: { style: 'medium' },
-                    bottom: { style: 'medium' }, right: { style: 'medium' }
-                };
-                sheet.getRow(currentRow).height = 45;
-                currentRow++;
+                      // Gộp ghi chú nếu khác
+                      if (sp.ghi_chu && sp.ghi_chu !== existing.ghi_chu) {
+                          existing.ghi_chu = (existing.ghi_chu || '') + ' | ' + sp.ghi_chu;
+                      }
 
-                // Dòng trống sau tiêu đề
-                sheet.addRow([]);
-                sheet.getRow(currentRow).height = 5;
-                currentRow++;
+                      // Gộp email người kiểm
+                      if (sp.checked_by_email && sp.checked_by_email !== existing.checked_by_email) {
+                          existing.checked_by_email = (existing.checked_by_email || '') + ' | ' + sp.checked_by_email;
+                      }
+                  }
+              });
 
-                // --- 2. Thông tin đợt kiểm kê (Mã kiểm hàng & Tên đợt kiểm) ---
-                const infoLabelStyle = { font: { bold: true, color: { argb: 'FF333333' }, size: 12 } };
-                const infoValueStyle = { font: { color: { argb: 'FF000000' }, size: 12 } };
+              const groupedRows = Array.from(groupedMap.values());
 
-                // Mã đợt kiểm kê - Nổi bật hơn
-                sheet.mergeCells(`A${currentRow}:J${currentRow}`);
-                const maDotCell = sheet.getCell(`A${currentRow}`);
-                maDotCell.value = `Mã đợt kiểm kê: ${dot.ma_dot}`;
-                maDotCell.font = { name: 'Times New Roman', size: 16, bold: true, color: { argb: 'FF1F4E79' } };
-                maDotCell.alignment = { vertical: 'middle', horizontal: 'center' };
-                maDotCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } };
-                maDotCell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
-                sheet.getRow(currentRow).height = 30;
-                currentRow++;
+              // ==== Bắt đầu tạo Excel ====
+              const workbook = new ExcelJS.Workbook();
+              const sheet = workbook.addWorksheet('Báo cáo kiểm kê');
 
-                // Tên đợt kiểm (to và nổi bật nhất)
-                sheet.mergeCells(`A${currentRow}:J${currentRow}`);
-                const dotNameCell = sheet.getCell(`A${currentRow}`);
-                dotNameCell.value = `Tên đợt kiểm: ${dot.ten_dot}`;
-                dotNameCell.font = { name: 'Times New Roman', size: 20, bold: true, color: { argb: 'FF1F4E79' } };
-                dotNameCell.alignment = { vertical: 'middle', horizontal: 'center' };
-                dotNameCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEBF1DE' } };
-                dotNameCell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
-                sheet.getRow(currentRow).height = 35;
-                currentRow++;
+              // --- Cấu hình chung cho Workbook ---
+              workbook.creator = 'Hệ thống quản lý kho';
+              workbook.lastModifiedBy = 'Hệ thống quản lý kho';
+              workbook.created = new Date();
+              workbook.modified = new Date();
 
-                // Ngày tạo báo cáo
-                const rowNgayTao = sheet.addRow(['Ngày tạo báo cáo:', new Date(dot.created_at).toLocaleString('vi-VN')]);
-                rowNgayTao.getCell('A').style = infoLabelStyle;
-                rowNgayTao.getCell('B').style = infoValueStyle;
-                currentRow++;
+              let currentRow = 1;
 
-                // Người tạo báo cáo
-                const rowNguoiTao = sheet.addRow(['Người tạo báo cáo:', dot.created_by_email]);
-                rowNguoiTao.getCell('A').style = infoLabelStyle;
-                rowNguoiTao.getCell('B').style = infoValueStyle;
-                currentRow++;
+              // --- 1. Tiêu đề chính ---
+              sheet.mergeCells(`A${currentRow}:J${currentRow}`);
+              const titleCell = sheet.getCell(`A${currentRow}`);
+              titleCell.value = 'BÁO CÁO KIỂM KÊ KHO';
+              titleCell.font = { name: 'Times New Roman', size: 28, bold: true, color: { argb: 'FF000080' } };
+              titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
+              titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDDEBF7' } };
+              titleCell.border = {
+                  top: { style: 'medium' }, left: { style: 'medium' },
+                  bottom: { style: 'medium' }, right: { style: 'medium' }
+              };
+              sheet.getRow(currentRow).height = 45;
+              currentRow++;
 
-                sheet.addRow([]); // Dòng trống trước bảng chi tiết
-                sheet.getRow(currentRow).height = 10;
-                currentRow++;
+              sheet.addRow([]);
+              sheet.getRow(currentRow).height = 5;
+              currentRow++;
 
-                // --- 3. Header chi tiết sản phẩm ---
-                const tableHeaderRow = currentRow; // Lưu dòng hiện tại để đóng băng header sau này
+              // --- 2. Thông tin đợt kiểm kê ---
+              const infoLabelStyle = { font: { bold: true, color: { argb: 'FF333333' }, size: 12 } };
+              const infoValueStyle = { font: { color: { argb: 'FF000000' }, size: 12 } };
 
-                // 1. Cấu trúc cột
-                sheet.columns = [
+              sheet.mergeCells(`A${currentRow}:J${currentRow}`);
+              const maDotCell = sheet.getCell(`A${currentRow}`);
+              maDotCell.value = `Mã đợt kiểm kê: ${dot.ma_dot}`;
+              maDotCell.font = { name: 'Times New Roman', size: 16, bold: true, color: { argb: 'FF1F4E79' } };
+              maDotCell.alignment = { vertical: 'middle', horizontal: 'center' };
+              maDotCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } };
+              maDotCell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+              sheet.getRow(currentRow).height = 30;
+              currentRow++;
+
+              sheet.mergeCells(`A${currentRow}:J${currentRow}`);
+              const dotNameCell = sheet.getCell(`A${currentRow}`);
+              dotNameCell.value = `Tên đợt kiểm: ${dot.ten_dot}`;
+              dotNameCell.font = { name: 'Times New Roman', size: 20, bold: true, color: { argb: 'FF1F4E79' } };
+              dotNameCell.alignment = { vertical: 'middle', horizontal: 'center' };
+              dotNameCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEBF1DE' } };
+              dotNameCell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+              sheet.getRow(currentRow).height = 35;
+              currentRow++;
+
+              const rowNgayTao = sheet.addRow(['Ngày tạo báo cáo:', new Date(dot.created_at).toLocaleString('vi-VN')]);
+              rowNgayTao.getCell('A').style = infoLabelStyle;
+              rowNgayTao.getCell('B').style = infoValueStyle;
+              currentRow++;
+
+              const rowNguoiTao = sheet.addRow(['Người tạo báo cáo:', dot.created_by_email]);
+              rowNguoiTao.getCell('A').style = infoLabelStyle;
+              rowNguoiTao.getCell('B').style = infoValueStyle;
+              currentRow++;
+
+              sheet.addRow([]);
+              sheet.getRow(currentRow).height = 10;
+              currentRow++;
+
+              // --- 3. Header chi tiết sản phẩm ---
+              const tableHeaderRow = currentRow;
+
+              sheet.columns = [
                   { header: 'STT', key: 'stt', width: 20 },
                   { header: 'Mã SP', key: 'product_code', width: 18 },
                   { header: 'Tên SP', key: 'product_name', width: 35 },
@@ -3354,177 +3375,108 @@ app.get('/api/xuat-excel/kiem-ke/:dotId', async (req, res) => {
                   { header: 'Tình trạng', key: 'chenh_lech', width: 18 },
                   { header: 'Người kiểm', key: 'checked_by_email', width: 28 },
                   { header: 'Thời gian kiểm', key: 'checked_at', width: 25 }
-                ];
+              ];
 
-                // 2. Tạo dòng tiêu đề thật (thủ công)
-                const headers = sheet.columns.map(c => c.header); // Lấy danh sách header
-                sheet.addRow(headers); // Thêm dòng header vào sheet
-                currentRow++; // Tăng dòng hiện tại vì vừa thêm dòng header
+              const headers = sheet.columns.map(c => c.header);
+              sheet.addRow(headers);
+              currentRow++;
 
-                // 3. Styling cho dòng tiêu đề
-                const headerRow = sheet.getRow(currentRow - 1); // Dòng vừa thêm là dòng header
-                headerRow.font = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } }; // Chữ trắng
-                headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
-                headerRow.fill = {
-                  type: 'pattern',
-                  pattern: 'solid',
-                  fgColor: { argb: 'FF4472C4' } // Nền xanh đậm
-                };
-                headerRow.height = 25;
+              const headerRow = sheet.getRow(currentRow - 1);
+              headerRow.font = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } };
+              headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+              headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4472C4' } };
+              headerRow.height = 25;
+              headerRow.eachCell({ includeEmpty: true }, (cell) => {
+                  cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+              });
 
-                // 4. Thêm border cho các ô tiêu đề
-                headerRow.eachCell({ includeEmpty: true }, (cell) => {
-                  cell.border = {
-                    top: { style: 'thin' },
-                    left: { style: 'thin' },
-                    bottom: { style: 'thin' },
-                    right: { style: 'thin' }
-                  };
-                });
+              // --- 4. Thêm dữ liệu chi tiết sản phẩm ---
+              let totalActualQuantity = 0;
+              let totalSystemQuantity = 0;
+              let totalDifference = 0;
+              let productsWithDiscrepancyCount = 0;
 
-                // --- 4. Thêm dữ liệu chi tiết sản phẩm và định dạng ---
-                let totalActualQuantity = 0;
-                let totalSystemQuantity = 0;
-                let totalDifference = 0;
-                let productsWithDiscrepancyCount = 0;
+              groupedRows.forEach((row, index) => {
+                  const chenh_lech = row.actual_quantity != null ? row.actual_quantity - row.system_quantity : null;
+                  if (chenh_lech !== null && chenh_lech !== 0) productsWithDiscrepancyCount++;
 
-                rows.forEach((row, index) => {
-                    const chenh_lech = row.actual_quantity != null
-                        ? row.actual_quantity - row.system_quantity
-                        : null;
+                  const dataRow = sheet.addRow({
+                      stt: index + 1,
+                      product_code: row.product_code,
+                      product_name: row.product_name,
+                      ten_khu_vuc: row.ten_khu_vuc,
+                      unit_price: row.unit_price,
+                      system_quantity: row.system_quantity,
+                      actual_quantity: row.actual_quantity,
+                      chenh_lech: chenh_lech,
+                      checked_by_email: row.checked_by_email,
+                      checked_at: row.checked_at ? new Date(row.checked_at).toLocaleString('vi-VN') : '',
+                  });
 
-                    if (chenh_lech !== null && chenh_lech !== 0) {
-                        productsWithDiscrepancyCount++;
-                    }
+                  if (index % 2 === 0) {
+                      dataRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } };
+                  }
 
-                    const dataRow = sheet.addRow({
-                        stt: index + 1,
-                        product_code: row.product_code,
-                        product_name: row.product_name,
-                        ten_khu_vuc: row.ten_khu_vuc,
-                        unit_price: row.unit_price,
-                        system_quantity: row.system_quantity,
-                        actual_quantity: row.actual_quantity,
-                        chenh_lech: chenh_lech, // Vẫn dùng biến này cho giá trị, chỉ đổi tên cột hiển thị
-                        checked_by_email: row.checked_by_email,
-                        checked_at: row.checked_at ? new Date(row.checked_at).toLocaleString('vi-VN') : '',
-                    });
+                  dataRow.eachCell({ includeEmpty: true }, (cell) => {
+                      cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+                      cell.alignment = { vertical: 'middle', horizontal: 'left' };
+                  });
 
-                    if (index % 2 === 0) {
-                        dataRow.fill = {
-                            type: 'pattern',
-                            pattern: 'solid',
-                            fgColor: { argb: 'FFF2F2F2' }
-                        };
-                    }
+                  dataRow.getCell('unit_price').numFmt = '#,##0.00';
+                  dataRow.getCell('system_quantity').numFmt = '#,##0';
+                  dataRow.getCell('actual_quantity').numFmt = '#,##0';
+                  dataRow.getCell('chenh_lech').numFmt = '#,##0';
 
-                    dataRow.eachCell({ includeEmpty: true }, (cell) => {
-                        cell.border = {
-                            top: { style: 'thin' }, left: { style: 'thin' },
-                            bottom: { style: 'thin' }, right: { style: 'thin' }
-                        };
-                        cell.alignment = { vertical: 'middle', horizontal: 'left' };
-                    });
+                  const diffCell = dataRow.getCell('chenh_lech');
+                  if (chenh_lech === null || row.actual_quantity === null) {
+                      diffCell.value = 'Chưa kiểm';
+                      diffCell.font = { italic: true, color: { argb: 'FF808080' } };
+                  } else if (chenh_lech < 0) {
+                      diffCell.value = `Thiếu ${Math.abs(chenh_lech)}`;
+                      diffCell.font = { color: { argb: 'FFFF0000' }, bold: true };
+                  } else if (chenh_lech > 0) {
+                      diffCell.value = `Dư ${chenh_lech}`;
+                      diffCell.font = { color: { argb: 'FFFFA500' }, bold: true };
+                  } else {
+                      diffCell.value = 'Đủ';
+                      diffCell.font = { color: { argb: 'FF00B050' }, bold: true };
+                  }
 
-                    dataRow.getCell('unit_price').numFmt = '#,##0.00';
-                    dataRow.getCell('system_quantity').numFmt = '#,##0';
-                    dataRow.getCell('actual_quantity').numFmt = '#,##0';
-                    dataRow.getCell('chenh_lech').numFmt = '#,##0';
+                  totalSystemQuantity += row.system_quantity || 0;
+                  totalActualQuantity += row.actual_quantity || 0;
+                  totalDifference += chenh_lech || 0;
+              });
 
-                    const diffCell = dataRow.getCell('chenh_lech');
+              // --- 5. Phần tổng kết ---
+              const summaryLabelStyle = { font: { bold: true, size: 12, color: { argb: 'FF333333' } }, alignment: { vertical: 'middle', horizontal: 'right' } };
+              const summaryValueStyle = {
+                  font: { bold: true, size: 12, color: { argb: 'FF1F4E79' } },
+                  fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } },
+                  border: { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } },
+                  alignment: { vertical: 'middle', horizontal: 'center' }
+              };
 
-                    if (chenh_lech === null || row.actual_quantity === null) {
-                        diffCell.value = 'Chưa kiểm';
-                        diffCell.font = { italic: true, color: { argb: 'FF808080' } };
-                    } else if (chenh_lech < 0) {
-                        diffCell.value = `Thiếu ${Math.abs(chenh_lech)}`;
-                        diffCell.font = { color: { argb: 'FFFF0000' }, bold: true };
-                    } else if (chenh_lech > 0) {
-                        diffCell.value = `Dư ${chenh_lech}`;
-                        diffCell.font = { color: { argb: 'FFFFA500' }, bold: true };
-                    } else {
-                        diffCell.value = 'Đủ';
-                        diffCell.font = { color: { argb: 'FF00B050' }, bold: true }; // Màu xanh lá
-                    }
+              sheet.addRow([]);
+              sheet.addRow([]);
+              currentRow += 2;
 
+              const rowTotalProducts = sheet.addRow(['', '', '', '', 'Tổng số sản phẩm đã kiểm kê:', '', groupedRows.length, '', '', '']);
+              rowTotalProducts.height = 25;
+              rowTotalProducts.getCell('E').style = summaryLabelStyle;
+              rowTotalProducts.getCell('G').style = { ...summaryValueStyle, numFmt: '#,##0' };
+              sheet.mergeCells(rowTotalProducts.getCell('E').address, rowTotalProducts.getCell('F').address);
+              sheet.mergeCells(rowTotalProducts.getCell('G').address, rowTotalProducts.getCell('J').address);
 
-                    totalSystemQuantity += row.system_quantity || 0;
-                    totalActualQuantity += row.actual_quantity || 0;
-                    totalDifference += chenh_lech || 0;
-                });
-
-                // --- 5. Phần tổng kết chi tiết hơn ---
-                const summaryLabelStyle = {
-                    font: { bold: true, size: 12, color: { argb: 'FF333333' } },
-                    alignment: { vertical: 'middle', horizontal: 'right' }
-                };
-                const summaryValueStyle = {
-                    font: { bold: true, size: 12, color: { argb: 'FF1F4E79' } },
-                    fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } },
-                    border: { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } },
-                    alignment: { vertical: 'middle', horizontal: 'center' }
-                };
-
-                sheet.addRow([]);
-                sheet.addRow([]);
-                currentRow += 2;
-
-                const rowTotalProducts = sheet.addRow(['', '', '', '', 'Tổng số sản phẩm đã kiểm kê:', '', rows.length, '', '', '']);
-                rowTotalProducts.height = 25;
-                rowTotalProducts.getCell('E').style = summaryLabelStyle;
-                rowTotalProducts.getCell('G').style = { ...summaryValueStyle, numFmt: '#,##0' };
-                sheet.mergeCells(rowTotalProducts.getCell('E').address, rowTotalProducts.getCell('F').address);
-                sheet.mergeCells(rowTotalProducts.getCell('G').address, rowTotalProducts.getCell('J').address);
-
-                const rowProductsWithDiscrepancy = sheet.addRow(['', '', '', '', 'Tổng số sản phẩm có chênh lệch:', '', productsWithDiscrepancyCount, '', '', '']);
-                rowProductsWithDiscrepancy.height = 25;
-                rowProductsWithDiscrepancy.getCell('E').style = summaryLabelStyle;
-                rowProductsWithDiscrepancy.getCell('G').style = { ...summaryValueStyle, numFmt: '#,##0' };
-                sheet.mergeCells(rowProductsWithDiscrepancy.getCell('E').address, rowProductsWithDiscrepancy.getCell('F').address);
-                sheet.mergeCells(rowProductsWithDiscrepancy.getCell('G').address, rowProductsWithDiscrepancy.getCell('J').address);
-
-                const rowSystemTotal = sheet.addRow(['', '', '', '', 'Tổng số lượng tồn hệ thống:', '', totalSystemQuantity, '', '', '']);
-                rowSystemTotal.height = 25;
-                rowSystemTotal.getCell('E').style = summaryLabelStyle;
-                rowSystemTotal.getCell('G').style = { ...summaryValueStyle, numFmt: '#,##0' };
-                sheet.mergeCells(rowSystemTotal.getCell('E').address, rowSystemTotal.getCell('F').address);
-                sheet.mergeCells(rowSystemTotal.getCell('G').address, rowSystemTotal.getCell('J').address);
-
-                const rowActualTotal = sheet.addRow(['', '', '', '', 'Tổng số lượng thực tế kiểm:', '', totalActualQuantity, '', '', '']);
-                rowActualTotal.height = 25;
-                rowActualTotal.getCell('E').style = summaryLabelStyle;
-                rowActualTotal.getCell('G').style = { ...summaryValueStyle, numFmt: '#,##0' };
-                sheet.mergeCells(rowActualTotal.getCell('E').address, rowActualTotal.getCell('F').address);
-                sheet.mergeCells(rowActualTotal.getCell('G').address, rowActualTotal.getCell('J').address);
-
-                const rowDifferenceTotal = sheet.addRow(['', '', '', '', 'Tổng số lượng chênh lệch:', '', totalDifference, '', '', '']);
-                rowDifferenceTotal.height = 25;
-                rowDifferenceTotal.getCell('E').style = summaryLabelStyle;
-                rowDifferenceTotal.getCell('G').style = { ...summaryValueStyle, numFmt: '#,##0' };
-                sheet.mergeCells(rowDifferenceTotal.getCell('E').address, rowDifferenceTotal.getCell('F').address);
-                sheet.mergeCells(rowDifferenceTotal.getCell('G').address, rowDifferenceTotal.getCell('J').address);
-
-
-                // --- 6. Đóng băng tiêu đề ---
-                //sheet.views = [{ state: 'frozen', ySplit: tableHeaderRow }];
-
-                // --- 7. Xuất file ---
-                res.setHeader(
-                    'Content-Type',
-                    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-                );
-                res.setHeader(
-                    'Content-Disposition',
-                    `attachment; filename=bao-cao-kiem-ke-${dot.ma_dot}.xlsx`
-                );
-
-                await workbook.xlsx.write(res);
-                res.end();
-            } catch (e) {
-                console.error('❌ Lỗi trong quá trình tạo file Excel:', e);
-                res.status(500).json({ success: false, message: 'Lỗi trong quá trình tạo file Excel.' });
-            }
-        });
+              // --- 6. Xuất file ---
+              res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+              res.setHeader('Content-Disposition', `attachment; filename=bao-cao-kiem-ke-${dot.ma_dot}.xlsx`);
+              await workbook.xlsx.write(res);
+              res.end();
+          } catch (e) {
+              console.error('❌ Lỗi trong quá trình tạo file Excel:', e);
+              res.status(500).json({ success: false, message: 'Lỗi trong quá trình tạo file Excel.' });
+          }
+      });
     });
 });
 
