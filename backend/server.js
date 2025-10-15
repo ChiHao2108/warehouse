@@ -3220,9 +3220,9 @@ app.post('/api/ai-summary', async (req, res) => {
   }
 });
 
-
+//railway
 // ========================== Lịch sử kiểm kê ==========================
-// API xuất Excel cho 1 đợt kiểm kê
+// API xuất Excel cho 1 đợt kiểm kê 
 app.get('/api/xuat-excel/kiem-ke/:dotId', async (req, res) => {
     const { dotId } = req.params;
 
@@ -3447,8 +3447,11 @@ app.get('/api/xuat-excel/kiem-ke/:dotId', async (req, res) => {
                   totalDifference += chenh_lech || 0;
               });
 
-              // --- 5. Phần tổng kết ---
-              const summaryLabelStyle = { font: { bold: true, size: 12, color: { argb: 'FF333333' } }, alignment: { vertical: 'middle', horizontal: 'right' } };
+              // --- 5. Phần tổng kết chi tiết hơn ---
+              const summaryLabelStyle = {
+                  font: { bold: true, size: 12, color: { argb: 'FF333333' } },
+                  alignment: { vertical: 'middle', horizontal: 'right' }
+              };
               const summaryValueStyle = {
                   font: { bold: true, size: 12, color: { argb: 'FF1F4E79' } },
                   fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } },
@@ -3460,12 +3463,46 @@ app.get('/api/xuat-excel/kiem-ke/:dotId', async (req, res) => {
               sheet.addRow([]);
               currentRow += 2;
 
-              const rowTotalProducts = sheet.addRow(['', '', '', '', 'Tổng số sản phẩm đã kiểm kê:', '', groupedRows.length, '', '', '']);
+              // Tổng số sản phẩm đã kiểm kê
+              const rowTotalProducts = sheet.addRow(['', '', '', '', 'Tổng số sản phẩm đã kiểm kê:', '', rows.length, '', '', '']);
               rowTotalProducts.height = 25;
               rowTotalProducts.getCell('E').style = summaryLabelStyle;
               rowTotalProducts.getCell('G').style = { ...summaryValueStyle, numFmt: '#,##0' };
               sheet.mergeCells(rowTotalProducts.getCell('E').address, rowTotalProducts.getCell('F').address);
               sheet.mergeCells(rowTotalProducts.getCell('G').address, rowTotalProducts.getCell('J').address);
+
+              // Tổng số sản phẩm có chênh lệch
+              const rowProductsWithDiscrepancy = sheet.addRow(['', '', '', '', 'Tổng số sản phẩm có chênh lệch:', '', productsWithDiscrepancyCount, '', '', '']);
+              rowProductsWithDiscrepancy.height = 25;
+              rowProductsWithDiscrepancy.getCell('E').style = summaryLabelStyle;
+              rowProductsWithDiscrepancy.getCell('G').style = { ...summaryValueStyle, numFmt: '#,##0' };
+              sheet.mergeCells(rowProductsWithDiscrepancy.getCell('E').address, rowProductsWithDiscrepancy.getCell('F').address);
+              sheet.mergeCells(rowProductsWithDiscrepancy.getCell('G').address, rowProductsWithDiscrepancy.getCell('J').address);
+
+              // Tổng số lượng tồn hệ thống
+              const rowSystemTotal = sheet.addRow(['', '', '', '', 'Tổng số lượng tồn hệ thống:', '', totalSystemQuantity, '', '', '']);
+              rowSystemTotal.height = 25;
+              rowSystemTotal.getCell('E').style = summaryLabelStyle;
+              rowSystemTotal.getCell('G').style = { ...summaryValueStyle, numFmt: '#,##0' };
+              sheet.mergeCells(rowSystemTotal.getCell('E').address, rowSystemTotal.getCell('F').address);
+              sheet.mergeCells(rowSystemTotal.getCell('G').address, rowSystemTotal.getCell('J').address);
+
+              // Tổng số lượng thực tế kiểm
+              const rowActualTotal = sheet.addRow(['', '', '', '', 'Tổng số lượng thực tế kiểm:', '', totalActualQuantity, '', '', '']);
+              rowActualTotal.height = 25;
+              rowActualTotal.getCell('E').style = summaryLabelStyle;
+              rowActualTotal.getCell('G').style = { ...summaryValueStyle, numFmt: '#,##0' };
+              sheet.mergeCells(rowActualTotal.getCell('E').address, rowActualTotal.getCell('F').address);
+              sheet.mergeCells(rowActualTotal.getCell('G').address, rowActualTotal.getCell('J').address);
+
+              // Tổng số lượng chênh lệch
+              const rowDifferenceTotal = sheet.addRow(['', '', '', '', 'Tổng số lượng chênh lệch:', '', totalDifference, '', '', '']);
+              rowDifferenceTotal.height = 25;
+              rowDifferenceTotal.getCell('E').style = summaryLabelStyle;
+              rowDifferenceTotal.getCell('G').style = { ...summaryValueStyle, numFmt: '#,##0' };
+              sheet.mergeCells(rowDifferenceTotal.getCell('E').address, rowDifferenceTotal.getCell('F').address);
+              sheet.mergeCells(rowDifferenceTotal.getCell('G').address, rowDifferenceTotal.getCell('J').address);
+
 
               // --- 6. Xuất file ---
               res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
